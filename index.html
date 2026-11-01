@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FamilyFlow - Family Relationship Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/canvas.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>">
+</head>
+<body>
+    <div id="app">
+        <!-- TOP BAR -->
+        <header class="topbar">
+            <button class="icon-btn sidebar-toggle" id="sidebarToggleBtn" title="Toggle sidebar">☰</button>
+            <span class="topbar-brand">FamilyFlow</span>
+            <div class="topbar-divider"></div>
+            <span class="topbar-board-name" id="boardNameEl" title="Click to rename">Main Family</span>
+            <span class="save-status saved" id="saveStatus">Saved</span>
+            <div class="topbar-divider"></div>
+            <div class="topbar-group">
+                <button class="icon-btn" id="undoBtn" title="Undo (Ctrl+Z)">↩</button>
+                <button class="icon-btn" id="redoBtn" title="Redo (Ctrl+Y)">↪</button>
+            </div>
+            <div class="topbar-divider"></div>
+            <div class="topbar-group">
+                <button class="icon-btn" id="zoomOutBtn" title="Zoom Out">−</button>
+                <span id="zoomLevel" style="font-size:11px;color:var(--text-secondary);min-width:36px;text-align:center">100%</span>
+                <button class="icon-btn" id="zoomInBtn" title="Zoom In">+</button>
+                <button class="icon-btn" id="fitScreenBtn" title="Fit to Screen">⊞</button>
+                <button class="icon-btn" id="autoArrangeBtn" title="Auto Arrange">⇲</button>
+            </div>
+            <div class="topbar-spacer"></div>
+            <div class="export-dropdown">
+                <button class="btn btn-secondary btn-sm" id="exportBtn">Export ▾</button>
+                <div class="export-menu" id="exportMenu">
+                    <button id="exportPNGBtn">Export as PNG</button>
+                    <button id="exportBoardJSON">Export Current Board (JSON)</button>
+                    <hr>
+                    <button id="exportFullJSON">Export All Data (JSON)</button>
+                    <button id="importJSONBtn">Import JSON</button>
+                </div>
+            </div>
+            <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <div class="main-layout">
+            <!-- LEFT SIDEBAR -->
+            <aside class="left-sidebar" id="leftSidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Tools</div>
+                    <div class="tools-grid">
+                        <button class="tool-btn active" id="toolSelect">
+                            <span class="tool-btn-icon">⊹</span>
+                            Select
+                        </button>
+                        <button class="tool-btn" id="toolAddPerson">
+                            <span class="tool-btn-icon">👤</span>
+                            Add Person
+                        </button>
+                        <button class="tool-btn" id="toolAddRelationship">
+                            <span class="tool-btn-icon">↔</span>
+                            Relationship
+                        </button>
+                        <button class="tool-btn" id="toolAddNote">
+                            <span class="tool-btn-icon">📝</span>
+                            Add Note
+                        </button>
+                        <button class="tool-btn" id="toolConnectFlowchart">
+                            <span class="tool-btn-icon">⇄</span>
+                            Connect Chart
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title" style="display:flex;justify-content:space-between;align-items:center">
+                        Flow Charts
+                        <button class="icon-btn-sm" id="createBoardBtn" title="Create new flow chart" style="font-size:16px">+</button>
+                    </div>
+                    <div class="boards-list" id="boardsList"></div>
+                </div>
+
+                <div class="sidebar-section search-box">
+                    <input type="text" id="searchInput" placeholder="Search family members...">
+                </div>
+
+                <div class="sidebar-scrollable">
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Family Members</div>
+                    </div>
+                    <div class="members-list" id="membersList"></div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Relationships</div>
+                    </div>
+                    <div class="relationships-list" id="relationshipsList"></div>
+                </div>
+            </aside>
+
+            <!-- CANVAS -->
+            <main class="canvas-container" id="canvasContainer">
+                <div class="canvas-inner" id="canvasInner">
+                    <svg class="connections-svg" id="connectionsSvg"></svg>
+                    <div class="cards-layer" id="cardsLayer"></div>
+                </div>
+
+                <!-- RELATIONSHIP LEGEND -->
+                <div class="relationship-legend" id="relationshipLegend">
+                    <div class="legend-header">
+                        Relationships
+                        <button class="icon-btn-sm" id="legendToggle" title="Toggle legend">▾</button>
+                    </div>
+                    <div class="legend-items">
+                        <div class="legend-item">
+                            <span class="legend-line" style="background:#a855f7"></span>
+                            Current Marriage
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line dashed" style="color:#a855f7"></span>
+                            Ex Marriage
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line" style="background:#c084fc"></span>
+                            Partnership
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line" style="background:#3b82f6"></span>
+                            Parent / Child
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line" style="background:#22c55e"></span>
+                            Sibling
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line dashed" style="color:#f97316"></span>
+                            Adoption
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line dashed" style="color:#ec4899"></span>
+                            Step Relationship
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-line dashed" style="color:#e2e8f0"></span>
+                            Flow Chart Link
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- RIGHT SIDEBAR -->
+            <aside class="right-sidebar" id="personDetails">
+            </aside>
+        </div>
+    </div>
+
+    <!-- PERSON MODAL -->
+    <div class="modal-overlay" id="personModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Person</h3>
+                <button class="icon-btn" onclick="if(window.familyFlowApp)window.familyFlowApp.peopleUI.hideModal()">&times;</button>
+            </div>
+            <form id="personForm" data-person-id="">
+                <div class="modal-body">
+
+                    <!-- PERSONAL -->
+                    <div class="form-section-title">Personal details</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pFirstName">First Name *</label>
+                            <input type="text" id="pFirstName" name="firstName" placeholder="Suresh">
+                        </div>
+                        <div class="form-group">
+                            <label for="pLastName">Last Name</label>
+                            <input type="text" id="pLastName" name="lastName" placeholder="Subramaniyam">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pMiddleName">Middle Name</label>
+                        <input type="text" id="pMiddleName" name="middleName" placeholder="Middle name">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pGender">Gender</label>
+                            <select id="pGender" name="gender">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="unspecified">Prefer not to specify</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pStatus">Status</label>
+                            <select id="pStatus" name="status">
+                                <option value="living">Living</option>
+                                <option value="deceased">Deceased</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pDob">Date of Birth</label>
+                            <input type="date" id="pDob" name="dateOfBirth">
+                        </div>
+                        <div class="form-group">
+                            <label for="pAge">Age</label>
+                            <input type="number" id="pAge" name="age" min="0" max="130" placeholder="30">
+                        </div>
+                    </div>
+                    <div class="form-hint">Enter either a date of birth or an age. The other is worked out for you.</div>
+                    <div class="form-group">
+                        <label for="pDod">Date of Death</label>
+                        <input type="date" id="pDod" name="dateOfDeath">
+                    </div>
+
+                    <!-- PARENTS -->
+                    <div class="form-section">
+                        <div class="form-section-title">Parents</div>
+                        <div class="form-group">
+                            <label for="pFather">Father</label>
+                            <select id="pFather" name="fatherId">
+                                <option value="">Not in the list</option>
+                            </select>
+                            <input type="text" id="pFatherName" name="fatherName" placeholder="Father's name (if not in the list)">
+                        </div>
+                        <div class="form-group">
+                            <label for="pMother">Mother</label>
+                            <select id="pMother" name="motherId">
+                                <option value="">Not in the list</option>
+                            </select>
+                            <input type="text" id="pMotherName" name="motherName" placeholder="Mother's name (if not in the list)">
+                        </div>
+                    </div>
+
+                    <!-- SIBLINGS -->
+                    <div class="form-section">
+                        <div class="form-section-title">Siblings</div>
+                        <div class="form-hint">Add the sibling closest in age to this person first.</div>
+                        <div id="siblingRows">
+                            <div class="repeat-row">
+                                <input type="text" name="siblingName" placeholder="Sibling name">
+                                <select name="siblingOrder">
+                                    <option value="elder">Elder</option>
+                                    <option value="younger">Younger</option>
+                                </select>
+                                <button type="button" class="icon-btn-sm row-remove" title="Remove">&times;</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addSiblingBtn">+ Add sibling</button>
+                    </div>
+
+                    <!-- MARRIAGE AND CHILDREN -->
+                    <div class="form-section">
+                        <div class="form-section-title">Marriage and children</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pMarital">Marital status</label>
+                                <select id="pMarital" name="maritalStatus">
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                    <option value="divorced">Divorced</option>
+                                    <option value="widowed">Widowed</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="pSpouseName">Spouse name</label>
+                                <input type="text" id="pSpouseName" name="spouseName" placeholder="Supraja Suresh">
+                            </div>
+                        </div>
+                        <div id="childRows">
+                            <div class="repeat-row">
+                                <input type="text" name="childName" placeholder="Child name">
+                                <input type="date" name="childDob" title="Date of birth (optional)">
+                                <button type="button" class="icon-btn-sm row-remove" title="Remove">&times;</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addChildBtn">+ Add child</button>
+                    </div>
+
+                    <!-- PROFESSIONAL -->
+                    <div class="form-section">
+                        <div class="form-section-title">Professional details</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pOccupation">Occupation</label>
+                                <input type="text" id="pOccupation" name="occupation" placeholder="Occupation">
+                            </div>
+                            <div class="form-group">
+                                <label for="pDesignation">Designation</label>
+                                <input type="text" id="pDesignation" name="designation" placeholder="Designation">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pCompany">Company</label>
+                                <input type="text" id="pCompany" name="company" placeholder="Company">
+                            </div>
+                            <div class="form-group">
+                                <label for="pLocation">Location</label>
+                                <input type="text" id="pLocation" name="location" placeholder="City, Country">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PHOTO AND NOTES -->
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label>Photo</label>
+                            <label class="photo-upload-area">
+                                <input type="file" id="photoUpload" accept="image/*">
+                                <img id="photoPreview" alt="Preview">
+                                <span class="photo-upload-text">Click to upload photo (max 2MB)</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="pNotes">Notes</label>
+                            <textarea id="pNotes" name="notes" placeholder="Additional notes..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="personCancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="personSaveBtn">Add Person</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RELATIONSHIP MODAL -->
+    <div class="modal-overlay" id="relationshipModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add Relationship</h3>
+                <button class="icon-btn" id="relCloseBtn">&times;</button>
+            </div>
+            <form id="relForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="relType">Relationship Type</label>
+                        <select id="relType" name="type">
+                            <option value="marriage">Marriage</option>
+                            <option value="exMarriage">Ex-Marriage</option>
+                            <option value="partnership">Partnership</option>
+                            <option value="parentChild">Parent → Child</option>
+                            <option value="adoption">Adoption</option>
+                            <option value="stepParent">Step Relationship</option>
+                            <option value="sibling">Sibling</option>
+                            <option value="other">Other</option>
+                            <option value="flowchartLink">Flow Chart Link</option>
+                        </select>
+                    </div>
+
+                    <!-- Couple fields -->
+                    <div id="coupleFields">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="relPerson1">Person 1</label>
+                                <select id="relPerson1"></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="relPerson2">Person 2</label>
+                                <select id="relPerson2"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marriage status -->
+                    <div id="marriageFields">
+                        <div class="form-group">
+                            <label for="relStatus">Status</label>
+                            <select id="relStatus">
+                                <option value="current">Current</option>
+                                <option value="former">Former</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Parent-child fields -->
+                    <div id="parentChildFields" class="form-hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="relParent">Parent</label>
+                                <select id="relParent"></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="relChild">Child</label>
+                                <select id="relChild"></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="relSubStatus">Status</label>
+                            <select id="relSubStatus">
+                                <option value="biological">Biological</option>
+                                <option value="adoptive">Adoptive</option>
+                                <option value="step">Step-parent</option>
+                                <option value="unknown">Unknown</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Flowchart link fields -->
+                    <div id="flowchartLinkFields" class="form-hidden">
+                        <div class="form-group">
+                            <label for="relTargetBoard">Target Flow Chart</label>
+                            <select id="relTargetBoard"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="relCancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Relationship</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal" style="max-width:400px">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="icon-btn" id="closeSettingsBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>Canvas</h4>
+                    <div class="toggle-row">
+                        <label>Snap to Grid</label>
+                        <label class="toggle"><input type="checkbox" id="snapGridToggle" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <label>Show Grid</label>
+                        <label class="toggle"><input type="checkbox" id="showGridToggle" checked><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h4>Display</h4>
+                    <div class="toggle-row">
+                        <label>Show Relationship Labels</label>
+                        <label class="toggle"><input type="checkbox" id="showLabelsToggle" checked><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <label>Show Legend</label>
+                        <label class="toggle"><input type="checkbox" id="showLegendToggle" checked><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h4>Data</h4>
+                    <button class="btn btn-danger btn-sm" onclick="if(confirm('Clear ALL saved data? This cannot be undone.')){localStorage.clear();location.reload();}">Clear All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR BACKDROP (mobile) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- SCRIPTS -->
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/people.js"></script>
+    <script src="js/relationships.js"></script>
+    <script src="js/boards.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/personform.js"></script>
+    <script src="js/family.js"></script>
+</body>
+</html>
