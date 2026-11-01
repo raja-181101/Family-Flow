@@ -503,7 +503,7 @@ FF.Canvas = class {
             if (!person) return;
 
             const card = document.createElement('div');
-            card.className = 'person-card' + (person.status === 'deceased' ? ' deceased' : '');
+            card.className = 'person-card' + (person.status === 'deceased' ? ' deceased' : '') + (person.detailsAdded === false ? ' incomplete' : '');
             card.dataset.personId = person.id;
 
             if (this.app.state.selectedPersonIds.includes(person.id)) {
@@ -538,7 +538,7 @@ FF.Canvas = class {
                     ${yearsText ? `<div class="card-years">${yearsText}</div>` : ''}
                     <div class="card-badges">
                         ${hasMarriage ? '<span class="badge badge-married">Married</span>' : ''}
-                        ${hasEx ? '<span class="badge badge-ex">Ex</span>' : ''}
+                         ${person.detailsAdded === false ? '<span class="badge badge-incomplete">Details needed</span>' : ''}
                     </div>
                 </div>
             `;

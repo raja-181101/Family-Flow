@@ -283,6 +283,7 @@ FF.App = class {
     }
 
     render() {
+        FF.Family.rebuildBoards(this.state);
         const board = this.state.getCurrentBoard();
         if (board) {
             document.getElementById('boardNameEl').textContent = board.name;

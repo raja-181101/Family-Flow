@@ -56,8 +56,9 @@ FF.State = class {
             this.currentBoardId = saved.currentBoardId || (this.boards.length > 0 ? this.boards[0].id : null);
             this._syncCounters();
         } else {
-            this.addBoard({ name: 'Main Family' });
-            this.currentBoardId = this.boards[0].id;
+            const starter = this.addBoard({ name: 'Main Family' });
+            starter.starter = true;
+            this.currentBoardId = starter.id;
         }
     }
 

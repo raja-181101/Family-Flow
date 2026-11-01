@@ -84,12 +84,12 @@ FF.Family = {
     },
 
     // ---------- the main save ----------
-    saveNewPerson(state, data, form) {
+    saveNewPerson(state, data, form, fillId) {
         const fullName = [data.firstName, data.middleName, data.lastName].filter(Boolean).join(' ');
 
         // 1. Is this person already in the tree?
-        let main = null;
-        const existing = this._findByName(state, fullName);
+        let main = fillId ? state.getPerson(fillId) : null;
+        const existing = main ? [] : this._findByName(state, fullName);
         if (existing.length) {
             if (existing[0].detailsAdded === false) {
                 const fill = confirm(

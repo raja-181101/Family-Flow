@@ -84,14 +84,23 @@ FF.PeopleUI = class {
         const isEdit = form.dataset.personId;
 
         if (isEdit) {
-            app.history.push(app.state.getSnapshot());
-            app.state.updatePerson(isEdit, data);
-        } else {
             const before = app.state.getSnapshot();
-            const person = FF.Family.saveNewPerson(app.state, data, form);
-            if (!person) return;               // you chose to cancel
+            const target = app.state.getPerson(isEdit);
+            if (target && target.detailsAdded === false) {
+                // a "not filled in" card: fill it in and create its links
+                FF.Family.saveNewPerson(app.state, data, form, isEdit);
+            } else {
+                app.state.updatePerson(isEdit, data);
+            }
             app.history.push(before);
+        } else {
+            const person = FF.Family.saveNewPerson(app.state, data, form);
+            const boardId = FF.Family.boardForPerson(app.state, person.id);
+            if (!person) return;               // you chose to cancel
+            FF.Family.rebuildBoards(app.state);
+            if (boardId) app.state.switchBoard(boardId);
             app.state.selectedPersonIds = [person.id];
+            setTimeout(() => app.canvas.fitToScreen(), 0);
         }
 
         this.hideModal();
@@ -162,7 +171,7 @@ FF.PeopleUI = class {
         `;
 
         panel.classList.add('active');
-
+        FF.FamilyNav.decoratePanel(this.app, personId, panel);
         document.getElementById('closeDetailsBtn').onclick = () => this.hideDetails();
         document.getElementById('editPersonBtn').onclick = () => {
             this.showAddModal(person);
@@ -199,13 +208,7 @@ FF.PeopleUI = class {
                 ${p.status === 'deceased' ? '<span class="member-deceased">✝</span>' : ''}
             `;
             div.onclick = () => {
-                this.app.state.selectedPersonIds = [p.id];
-                const pos = this.app.state.getPosition(p.id);
-                if (pos) {
-                    this.app.canvas.centerOn(pos.x + 90, pos.y + 70);
-                }
-                this.showDetails(p.id);
-                this.app.render();
+                FF.FamilyNav.showPerson(this.app, p.id);
             };
             list.appendChild(div);
         });

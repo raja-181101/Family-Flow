@@ -126,7 +126,7 @@
 
         new MutationObserver(() => {
             if (!modal.classList.contains('active')) return;
-            if (!form.dataset.personId) resetNewFields();
+            resetNewFields();
             populateParents();
             updateVisibility();
             updateAge();
